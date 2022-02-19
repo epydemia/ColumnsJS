@@ -172,7 +172,7 @@ function gameLoop() {
             let punti = checkMap2();
             if (punti > 0) // If there is something to remove...
             {
-                score += punti;
+                score += (punti*(10+level));
                 gameStatus = "waiting";
                 count = 10;
             }
@@ -195,15 +195,9 @@ function gameLoop() {
             posY = 0;
             gameStatus = "falling";
             break;
-
-
-
-
     }
 
     draw();
-
-    //updateMap();
 
     window.requestAnimationFrame(gameLoop);
 }
