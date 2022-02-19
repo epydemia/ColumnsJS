@@ -24,6 +24,9 @@ let gameMap = [];     // this is the map of the game area (array of 21 x 9)
 let deleteMap = [];
 let blockColors = [];
 let score = 0;
+let startLevel=0;
+let level = 0;
+let blockCount=0;
 let pause = false;
 let gameStatus = "Init";
 
@@ -85,7 +88,7 @@ function init() {
 }
 
 function gameLoop() {
-    scoreText.textContent = "Score: " + score;
+    scoreText.textContent = "Score: " + score +"\nLevel: " + level;
 
     switch (gameStatus) {
         case "falling":
@@ -93,8 +96,7 @@ function gameLoop() {
             oldY = posY;
             bottom = false;
 
-
-            if (!keyPresses.ArrowLeft & !keyPresses.ArrowRight & !keyPresses.ArrowUp)
+            if (!keyPresses.ArrowLeft & !keyPresses.ArrowRight & !keyPresses.ArrowUp &!keyPresses.l)
                 enable = true;
 
             if (enable & keyPresses.ArrowRight) {
@@ -115,6 +117,11 @@ function gameLoop() {
                 enable = false;
             }
 
+            if (enable & keyPresses.l) {
+                startLevel++;
+                enable = false;
+            }
+
             if (enable & keyPresses.d) {
                 for (i = 0; i < gameCanvasWidth; i++) {
                     for (j = 0; j < gameCanvasHeight; j++) {
@@ -123,7 +130,6 @@ function gameLoop() {
                     }
                 }
                 updateMap();
-
                 enable = false;
             }
 
@@ -139,7 +145,7 @@ function gameLoop() {
                 } else {
                     bottom = true;
                 }
-                count = Speed;
+                count = Speed-level;
                 enable = true;
             } else {
                 count--;
@@ -203,10 +209,21 @@ function gameLoop() {
 }
 
 function CreateBlock() {
+    blockCount++;
+
+    level=Math.min(startLevel + blockCount/30|0 , 16);
+
+    if (level>=7)
+        MaxColor=5;
+    else if (level >= 5)
+        MaxColor=4;
+    else
+        MaxColor=3;
+
     blockColors = [0, 0, 0];
     for (i = 0; i < 3; i++) {
 
-        blockColors[i] = Math.floor(Math.random() * 3) + 1;
+        blockColors[i] = Math.floor(Math.random() * MaxColor) + 1;
 
     }
 }
@@ -283,29 +300,21 @@ function checkMap2() {
     }
 
     // Mark the block for deletion in gameMap
-
     for (i = 0; i < gameCanvasWidth; i++) {
         for (j = 0; j < gameCanvasHeight; j++)
             if (deleteMap[i][j] == 1)
                 gameMap[i][j] = -1;
     }
-
     return points;
-
-
-
 }
 
 
 function updateMap() {
-
-
     for (i = 0; i < gameCanvasWidth; i++) {
         for (j = 0; j < gameCanvasHeight; j++)
             if (deleteMap[i][j] == 1)
                 gameMap[i][j] = 0;
     }
-
     found = true;
     while (found) {
         found = false;
@@ -355,6 +364,12 @@ function drawBox(x, y, colorIndex) {
             break;
         case 3:
             ctx.fillStyle = "#0000FF";
+            break;
+        case 4:
+            ctx.fillStyle= "#9400D3";
+            break;
+        case 5:
+            ctx.fillStyle= "#FFFF00";
             break;
         case 0:
             ctx.fillStyle = "#FFFFFF";
