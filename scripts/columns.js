@@ -3,12 +3,10 @@ const gameCanvasHeight = 21;
 const gameCanvasWidth = 9
 
 // Define the size of the blocks
-const BLOCKSIZE = 40;
+let BLOCKSIZE = 40;
 
 // Get the canvas object from the document and resize it
-let canvas = document.querySelector('canvas');
-canvas.height = gameCanvasHeight * BLOCKSIZE;
-canvas.width = gameCanvasWidth * BLOCKSIZE;
+let canvas = document.querySelector('canvas')
 let ctx = canvas.getContext('2d');
 
 let scoreText = document.getElementById('scoreText')
@@ -40,12 +38,28 @@ function keyUpListener(event) {
     keyPresses[event.key] = false;
 }
 
+window.addEventListener('resize', resizeCanvas, false);
+
 
 init();
 window.requestAnimationFrame(gameLoop);
 
 
+function resizeCanvas() {
+    scaleX=window.innerWidth/gameCanvasWidth|0;
+    scaleY=(window.innerHeight-50)/gameCanvasHeight|0;
+
+    scale=Math.min(scaleX,scaleY);
+    BLOCKSIZE=scale;
+
+    canvas.height = gameCanvasHeight * BLOCKSIZE;
+    canvas.width = gameCanvasWidth * BLOCKSIZE;
+
+}
+
 function init() {
+    resizeCanvas();
+
     posX = gameCanvasWidth / 2 | 0;     // initialized to the center column of the game
     posY = 0;                         // Initialized to the top row
     Speed = 20;                       // Speed of the game (The block will fall once every 20 frames)
