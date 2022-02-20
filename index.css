@@ -1,4 +1,9 @@
 ﻿canvas {
     border: 1px solid black;
-    background: white;
+    background: linear-gradient(gray , lightgray );
 }
+
+.column {
+    float: left;
+    /*width: 50%;*/
+   }
