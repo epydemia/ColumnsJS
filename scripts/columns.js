@@ -4,6 +4,7 @@ const gameCanvasWidth = 9
 
 // Define the size of the blocks
 let BLOCKSIZE = 40;
+let BORDERSIZE = 2;
 
 // Get the canvas object from the document and resize it
 //let canvas = document.querySelector('gameScene')
@@ -71,11 +72,10 @@ function resizeCanvas() {
 
     scale=Math.min(scaleX,scaleY);
     BLOCKSIZE=scale;
+    BORDERSIZE=Math.max(BLOCKSIZE/20|0,1);
 
     canvas.height = gameCanvasHeight * BLOCKSIZE;
     canvas.width = gameCanvasWidth * BLOCKSIZE;
-
-    document.getElementById("gameArea").width=canvas.width+50;
 
     preview.height = 5 * BLOCKSIZE;
     preview.width = 3 * BLOCKSIZE;
@@ -117,7 +117,7 @@ function init() {
 }
 
 function gameLoop() {
-    scoreText.textContent = "Score: " + score +"\nLevel: " + level;
+    scoreText.textContent = "Score: " + score +"\nLevel: " + level + "\nBlockSize: "+BLOCKSIZE+" " +BORDERSIZE;
 
     switch (gameStatus) {
         case Status.GAMEOVER:
@@ -414,7 +414,7 @@ function drawMap() {
 }
 
 function drawBox(context, x, y, colorIndex) {
-    const BORDERSIZE = 2;
+    
     context.beginPath();
     context.fillStyle = "#000000";
     context.fillRect(x * BLOCKSIZE, y * BLOCKSIZE, BLOCKSIZE, BLOCKSIZE);
