@@ -25,20 +25,20 @@ const Status = {
 Object.freeze(Status);
 
 // Define the variable for the game 
-let posX = 0;       // X position of the falling block 
-let posY = 0;       // Y position of the falling block
-let Speed = 0;       // Speed of the game (higher value = slower game)
-let count = 0;        // Initialize the counter (when count=0 the block is moved to the new position)
-let enable = false;   // this value is used to limit the input of the user (when true the input is captured)
-let gameMap = [];     // this is the map of the game area (array of 21 x 9)
-let deleteMap = [];
-let blockColors = [];
-let score = 0;
-let startLevel=0;
-let level = 0;
-let blockCount=0;
+let posX = 0;           // X position of the falling block 
+let posY = 0;           // Y position of the falling block
+let Speed = 0;          // Speed of the game (higher value = slower game)
+let count = 0;          // Initialize the counter (when count=0 the block is moved to the new position)
+let enable = false;     // this value is used to limit the input of the user (when true the input is captured)
+let gameMap = [];       // this is the map of the game area (array of 21 x 9)
+let deleteMap = [];     // this map marks the blocks to be deleted
+let blockColors = [];   
+let score = 0;          // Score
+let startLevel=0;       // This variable offsets the level number
+let level = 0;          // Current level
+let blockCount=0;       // number of blocks generated (used mainly to manage the level switch)
 let pause = false;
-let gameStatus = Status.INIT;
+let gameStatus = Status.INIT;   // status of the game state machine
 
 
 // register the listener for the key input
@@ -52,6 +52,7 @@ function keyUpListener(event) {
     keyPresses[event.key] = false;
 }
 
+// register the listener for the window resize event
 window.addEventListener('resize', resizeCanvas, false);
 
 
@@ -69,20 +70,22 @@ function resizeCanvas() {
     canvas.height = gameCanvasHeight * BLOCKSIZE;
     canvas.width = gameCanvasWidth * BLOCKSIZE;
 
+    document.getElementById("gameArea").width=canvas.width+50;
+
 }
 
 function init() {
     resizeCanvas();
 
     posX = gameCanvasWidth / 2 | 0;     // initialized to the center column of the game
-    posY = 0;                         // Initialized to the top row
-    Speed = 20;                       // Speed of the game (The block will fall once every 20 frames)
-    level=0;
-    startLevel=0;
-    blockCount=0;
-    score=0;
-    
-    count = Speed;
+    posY = 0;                           // Initialized to the top row
+    Speed = 20;                         // Speed of the game (The block will fall once every 20 frames)
+    level=0;                            // reset of starting level
+    startLevel=0;                       // reset of level offset
+    blockCount=0;                       // reset the block count
+    score=0;                            // reset the score
+
+    count = Speed;              
     enable = true;
 
     // Initialize the gameMap (0 = no block in the position i,j)
@@ -114,11 +117,13 @@ function gameLoop() {
                 gameStatus.FALLING;
             }
             break;
+
         case Status.FALLING:
             oldX = posX;
             oldY = posY;
             bottom = false;
 
+            // To improve the control the key are enabled only if they are previosly released
             if (!keyPresses.ArrowLeft & !keyPresses.ArrowRight & !keyPresses.ArrowUp &!keyPresses.l)
                 enable = true;
 
@@ -131,7 +136,8 @@ function gameLoop() {
                 posX -= 1;
                 enable = false;
             }
-
+            
+            // ArrowUp Shift the block colors
             if (enable & keyPresses.ArrowUp) {
                 temp = blockColors[0];
                 blockColors[0] = blockColors[1];
@@ -145,6 +151,8 @@ function gameLoop() {
                 enable = false;
             }
 
+
+            // for debug only d deletes all the red blocks from the map
             if (enable & keyPresses.d) {
                 for (i = 0; i < gameCanvasWidth; i++) {
                     for (j = 0; j < gameCanvasHeight; j++) {
@@ -156,19 +164,24 @@ function gameLoop() {
                 enable = false;
             }
 
-
+            // check if the new requested position is inside the game area, else do nothing and decrease counter
             if (posX < 0 | posX >= gameCanvasWidth) {
                 posX = oldX;
             }
 
 
+            // if the block has to be redrawn in the new positon
             if (count == 0 | keyPresses.ArrowDown) {
+                // if is not at the bottom if the pit, then the posY is increased
                 if (posY + 2 < gameCanvasHeight) {
                     posY += 1;
                 } else {
                     bottom = true;
                 }
+                // count is set to the new value derived from level
                 count = Speed-level;
+
+                // key input is enabled (even if the key has not been released)
                 enable = true;
             } else {
                 count--;
@@ -176,13 +189,14 @@ function gameLoop() {
 
             if (gameMap[posX][posY] == 0 & gameMap[posX][posY + 1] == 0 & gameMap[posX][posY + 2] == 0) {
 
-            } else {
+            } else { // if the requested position of the block is not free, then the block is kept in the old position and reached the bottom
                 posX = oldX;
                 posY = oldY;
                 if (gameMap[posX][posY + 3] != 0)
                     bottom = true;
             }
 
+            // if the block is landed, then update gameMap with the new block
             if (bottom) {
                 for (i = 0; i < 3; i++) {
                     gameMap[posX][posY + i] = blockColors[i];
@@ -192,34 +206,39 @@ function gameLoop() {
             break;
 
         case Status.DELETING:
+            // check the Map for deletion
             let punti = checkMap2();
             if (punti > 0) // If there is something to remove...
             {
-                score += (punti*(10+level));
-                gameStatus = Status.WAITING;
-                count = 10;
+                score += (punti*(10+level)); // increase the score
+                gameStatus = Status.WAITING; // change status
+                count = 10;                  // set the count to 10 (to highlight the deletion)
             }
-            else {
+            else { // if nothing to remove, generate a new block
                 gameStatus=Status.NEWBLOCK;
             }
             break;
 
         case Status.WAITING:
             if (count == 0) {
-                updateMap();
-                gameStatus = Status.DELETING;
+                // if waiting time is expired update map and change the game status
+                updateMap(); // this function remove the deleted block and move the block towards the bottom
+                gameStatus = Status.DELETING;   // status is deleting to check if after the update other blocks must be deleted
             }
             else
                 count--
             break;
 
         case Status.NEWBLOCK:
+            // set the new posX and posY position of the new block
             posX = gameCanvasWidth / 2 | 0;
             posY = 0;
+
+            // if there is enough room to draw the new block, create the block and continue the game
             if (gameMap[posX][posY]==0 & gameMap[posX][posY+1]==0 & gameMap[posX][posY+2]==0) {
                 CreateBlock();
                 gameStatus = Status.FALLING;
-            } else {
+            } else { // else game over :(
                 gameStatus = Status.GAMEOVER;
             }
             break;
@@ -232,13 +251,16 @@ function gameLoop() {
 
 function CreateBlock() {
     blockCount++;
+
+    // every 30 blocks the level is increased (max level is 16)
     level=Math.min(startLevel + blockCount/30|0 , 16);
 
+    // At level 7 the number of available color is incresed to 5
     if (level>=7)
         MaxColor=5;
-    else if (level >= 5)
+    else if (level >= 5) // at level 5 the number of available color is increased to 4
         MaxColor=4;
-    else
+    else        // level lower than 5 has only 3 colors
         MaxColor=3;
 
     blockColors = [0, 0, 0];
