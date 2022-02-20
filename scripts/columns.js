@@ -6,8 +6,12 @@ const gameCanvasWidth = 9
 let BLOCKSIZE = 40;
 
 // Get the canvas object from the document and resize it
-let canvas = document.querySelector('canvas')
+//let canvas = document.querySelector('gameScene')
+let canvas = document.getElementById('GameScene');
 let ctx = canvas.getContext('2d');
+
+let preview = document.getElementById('Preview');
+let ctxPreview = preview.getContext('2d');
 
 let scoreText = document.getElementById('scoreText')
 
@@ -32,7 +36,8 @@ let count = 0;          // Initialize the counter (when count=0 the block is mov
 let enable = false;     // this value is used to limit the input of the user (when true the input is captured)
 let gameMap = [];       // this is the map of the game area (array of 21 x 9)
 let deleteMap = [];     // this map marks the blocks to be deleted
-let blockColors = [];   
+let blockColors = [];  
+let nextBlock = []; 
 let score = 0;          // Score
 let startLevel=0;       // This variable offsets the level number
 let level = 0;          // Current level
@@ -72,6 +77,10 @@ function resizeCanvas() {
 
     document.getElementById("gameArea").width=canvas.width+50;
 
+    preview.height = 5 * BLOCKSIZE;
+    preview.width = 3 * BLOCKSIZE;
+
+
 }
 
 function init() {
@@ -102,6 +111,7 @@ function init() {
             deleteMap[i][j] = 0;
     }
 
+    nextBlock=GenerateBlock();
     CreateBlock();
     gameStatus = Status.FALLING;
 }
@@ -255,6 +265,12 @@ function CreateBlock() {
     // every 30 blocks the level is increased (max level is 16)
     level=Math.min(startLevel + blockCount/30|0 , 16);
 
+    blockColors=nextBlock;
+    nextBlock=GenerateBlock();
+}
+
+function GenerateBlock() {
+    let block = [0, 0, 0];
     // At level 7 the number of available color is incresed to 5
     if (level>=7)
         MaxColor=5;
@@ -263,10 +279,10 @@ function CreateBlock() {
     else        // level lower than 5 has only 3 colors
         MaxColor=3;
 
-    blockColors = [0, 0, 0];
     for (i = 0; i < 3; i++) {
-        blockColors[i] = Math.floor(Math.random() * MaxColor) + 1;
+        block[i] = Math.floor(Math.random() * MaxColor) + 1;
     }
+    return block;
 }
 
 
@@ -370,7 +386,19 @@ function updateMap() {
     }
 }
 
+function drawPreview() {
+    ctxPreview.clearRect(0,0,preview.width,preview.height);
+
+    for (i=0;i<3;i++)
+    {
+        drawBox(ctxPreview,1,1+i,nextBlock[i]);
+    }
+
+}
+
 function draw() {
+    drawPreview();
+
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawMap();
     if (gameStatus == Status.FALLING)
@@ -381,51 +409,52 @@ function drawMap() {
     for (i = 0; i < gameCanvasWidth; i++)
         for (j = 0; j < gameCanvasHeight; j++)
             if (gameMap[i][j] != 0) {
-                drawBox(i, j, gameMap[i][j]);
+                drawBox(ctx,i, j, gameMap[i][j]);
             }
 }
 
-function drawBox(x, y, colorIndex) {
+function drawBox(context, x, y, colorIndex) {
     const BORDERSIZE = 2;
-    ctx.beginPath();
-    ctx.fillStyle = "#000000";
-    ctx.fillRect(x * BLOCKSIZE, y * BLOCKSIZE, BLOCKSIZE, BLOCKSIZE);
+    context.beginPath();
+    context.fillStyle = "#000000";
+    context.fillRect(x * BLOCKSIZE, y * BLOCKSIZE, BLOCKSIZE, BLOCKSIZE);
     switch (colorIndex) {
         case -1:
-            ctx.fillStyle = "#000000";
+            context.fillStyle = "#000000";
             break;
         case 1:
-            ctx.fillStyle = "#FF0000";
+            context.fillStyle = "#FF0000";
             break;
         case 2:
-            ctx.fillStyle = "#00FF00";
+            context.fillStyle = "#00FF00";
             break;
         case 3:
-            ctx.fillStyle = "#0000FF";
+            context.fillStyle = "#0000FF";
             break;
         case 4:
-            ctx.fillStyle= "#9400D3";
+            context.fillStyle= "#9400D3";
             break;
         case 5:
-            ctx.fillStyle= "#FFFF00";
+            context.fillStyle= "#FFFF00";
             break;
         case 0:
-            ctx.fillStyle = "#FFFFFF";
+            context.fillStyle = "#FFFFFF";
             break;
     }
 
-    ctx.fillRect(
+    context.fillRect(
         x * BLOCKSIZE + BORDERSIZE,
         y * BLOCKSIZE + BORDERSIZE,
         BLOCKSIZE - 2 * BORDERSIZE,
         BLOCKSIZE - 2 * BORDERSIZE);
-    ctx.stroke();
+    context.stroke();
 
 }
 
+
 function drawBlock(x, y) {
     for (i = 0; i < 3; i++) {
-        drawBox(x, y + i, blockColors[i]);
+        drawBox(ctx,x, y + i, blockColors[i]);
     }
 
 
