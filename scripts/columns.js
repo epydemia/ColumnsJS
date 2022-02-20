@@ -117,7 +117,7 @@ function init() {
 }
 
 function gameLoop() {
-    scoreText.textContent = "Score: " + score +"\nLevel: " + level + "\nBlockSize: "+BLOCKSIZE+" " +BORDERSIZE;
+    scoreText.textContent = "Score: " + score +"\nLevel: " + level;
 
     switch (gameStatus) {
         case Status.GAMEOVER:
