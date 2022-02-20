@@ -14,6 +14,16 @@ let scoreText = document.getElementById('scoreText')
 // Define the array to get the input from the keyboard
 let keyPresses = {};
 
+const Status = {
+    INIT: 0,
+    FALLING: 1,
+    DELETING: 2,
+    WAITING: 3,
+    NEWBLOCK: 4,
+    GAMEOVER: 5
+};
+Object.freeze(Status);
+
 // Define the variable for the game 
 let posX = 0;       // X position of the falling block 
 let posY = 0;       // Y position of the falling block
@@ -28,7 +38,8 @@ let startLevel=0;
 let level = 0;
 let blockCount=0;
 let pause = false;
-let gameStatus = "Init";
+let gameStatus = Status.INIT;
+
 
 // register the listener for the key input
 window.addEventListener('keydown', keyDownListener, false);
@@ -66,6 +77,11 @@ function init() {
     posX = gameCanvasWidth / 2 | 0;     // initialized to the center column of the game
     posY = 0;                         // Initialized to the top row
     Speed = 20;                       // Speed of the game (The block will fall once every 20 frames)
+    level=0;
+    startLevel=0;
+    blockCount=0;
+    score=0;
+    
     count = Speed;
     enable = true;
 
@@ -84,14 +100,21 @@ function init() {
     }
 
     CreateBlock();
-    gameStatus = "falling";
+    gameStatus = Status.FALLING;
 }
 
 function gameLoop() {
     scoreText.textContent = "Score: " + score +"\nLevel: " + level;
 
     switch (gameStatus) {
-        case "falling":
+        case Status.GAMEOVER:
+            if (keyPresses.Escape)
+            {
+                init();
+                gameStatus.FALLING;
+            }
+            break;
+        case Status.FALLING:
             oldX = posX;
             oldY = posY;
             bottom = false;
@@ -164,36 +187,41 @@ function gameLoop() {
                 for (i = 0; i < 3; i++) {
                     gameMap[posX][posY + i] = blockColors[i];
                 }
-                gameStatus = "deleting";
+                gameStatus=Status.DELETING;
             }
             break;
 
-        case "deleting":
+        case Status.DELETING:
             let punti = checkMap2();
             if (punti > 0) // If there is something to remove...
             {
                 score += (punti*(10+level));
-                gameStatus = "waiting";
+                gameStatus = Status.WAITING;
                 count = 10;
             }
-            else
-                gameStatus = "newBlock";
+            else {
+                gameStatus=Status.NEWBLOCK;
+            }
             break;
 
-        case "waiting":
+        case Status.WAITING:
             if (count == 0) {
                 updateMap();
-                gameStatus = "deleting";
+                gameStatus = Status.DELETING;
             }
             else
                 count--
             break;
 
-        case "newBlock":
-            CreateBlock();
+        case Status.NEWBLOCK:
             posX = gameCanvasWidth / 2 | 0;
             posY = 0;
-            gameStatus = "falling";
+            if (gameMap[posX][posY]==0 & gameMap[posX][posY+1]==0 & gameMap[posX][posY+2]==0) {
+                CreateBlock();
+                gameStatus = Status.FALLING;
+            } else {
+                gameStatus = Status.GAMEOVER;
+            }
             break;
     }
 
@@ -204,7 +232,6 @@ function gameLoop() {
 
 function CreateBlock() {
     blockCount++;
-
     level=Math.min(startLevel + blockCount/30|0 , 16);
 
     if (level>=7)
@@ -216,9 +243,7 @@ function CreateBlock() {
 
     blockColors = [0, 0, 0];
     for (i = 0; i < 3; i++) {
-
         blockColors[i] = Math.floor(Math.random() * MaxColor) + 1;
-
     }
 }
 
@@ -226,7 +251,6 @@ function CreateBlock() {
 function checkMap2() {
     let points = 0;
     loop = true;
-    //while (loop) {
     loop = false;
 
     // Initialize the block to be deleted
@@ -235,8 +259,6 @@ function checkMap2() {
         for (j = 0; j < gameCanvasHeight; j++)
             deleteMap[i][j] = 0;
     }
-
-
 
     for (i = 0; i < gameCanvasWidth; i++) {
         for (j = 0; j < gameCanvasHeight; j++) {
@@ -329,7 +351,7 @@ function updateMap() {
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawMap();
-    if (gameStatus == "falling")
+    if (gameStatus == Status.FALLING)
         drawBlock(posX, posY);
 }
 
@@ -370,7 +392,6 @@ function drawBox(x, y, colorIndex) {
             break;
     }
 
-    //ctx.fillStyle="#FF0000";
     ctx.fillRect(
         x * BLOCKSIZE + BORDERSIZE,
         y * BLOCKSIZE + BORDERSIZE,
