@@ -45,6 +45,7 @@ let level = 0;          // Current level
 let blockCount=0;       // number of blocks generated (used mainly to manage the level switch)
 let pause = false;
 let gameStatus = Status.INIT;   // status of the game state machine
+let ticktock = false;           // this variable is used to plot the falling block half square lower (to improve fluidity)
 
 
 // register the listener for the key input
@@ -182,10 +183,17 @@ function gameLoop() {
 
             // if the block has to be redrawn in the new positon
             if (count == 0 | keyPresses.ArrowDown) {
-                // if is not at the bottom if the pit, then the posY is increased
-                if (posY + 2 < gameCanvasHeight) {
-                    posY += 1;
+                // if is not at the bottom if the pit, then the posY is increased 
+                if (posY + 2 < gameCanvasHeight-1) {
+                    if (ticktock) { // increase the vertical position by one or by halfstep using ticktock variable
+                        posY += 1;
+                        ticktock=false;
+                    } else {  
+                        ticktock=true;
+                    }
+                        
                 } else {
+                    ticktock=false;
                     bottom = true;
                 }
                 // count is set to the new value derived from level
@@ -198,11 +206,16 @@ function gameLoop() {
             }
 
             if (gameMap[posX][posY] == 0 & gameMap[posX][posY + 1] == 0 & gameMap[posX][posY + 2] == 0) {
+                if (ticktock & gameMap[posX][posY + 3] != 0) { // if the next block is not free
+                    ticktock=false;     // no halfstep possible
+                    bottom=true;        // bottom reached
+
+                }
 
             } else { // if the requested position of the block is not free, then the block is kept in the old position and reached the bottom
                 posX = oldX;
                 posY = oldY;
-                if (gameMap[posX][posY + 3] != 0)
+                if (gameMap[posX][posY + 3] != 0) 
                     bottom = true;
             }
 
@@ -391,7 +404,7 @@ function drawPreview() {
 
     for (i=0;i<3;i++)
     {
-        drawBox(ctxPreview,1,1+i,nextBlock[i]);
+        drawBox(ctxPreview,1,1+i,nextBlock[i],false);
     }
 
 }
@@ -409,15 +422,22 @@ function drawMap() {
     for (i = 0; i < gameCanvasWidth; i++)
         for (j = 0; j < gameCanvasHeight; j++)
             if (gameMap[i][j] != 0) {
-                drawBox(ctx,i, j, gameMap[i][j]);
+                drawBox(ctx,i, j, gameMap[i][j],false);
             }
 }
 
-function drawBox(context, x, y, colorIndex) {
+function drawBox(context, x, y, colorIndex,halfshift) {
     
     context.beginPath();
     context.fillStyle = "#000000";
-    context.fillRect(x * BLOCKSIZE, y * BLOCKSIZE, BLOCKSIZE, BLOCKSIZE);
+    if (halfshift)
+    {
+        context.fillRect(x * BLOCKSIZE, y * BLOCKSIZE+BLOCKSIZE/2, BLOCKSIZE, BLOCKSIZE);
+
+    } else {
+        context.fillRect(x * BLOCKSIZE, y * BLOCKSIZE, BLOCKSIZE, BLOCKSIZE);
+        
+    }
     switch (colorIndex) {
         case -1:
             context.fillStyle = "#000000";
@@ -441,20 +461,27 @@ function drawBox(context, x, y, colorIndex) {
             context.fillStyle = "#FFFFFF";
             break;
     }
-
+    if (halfshift) {
+        context.fillRect(
+            x * BLOCKSIZE + BORDERSIZE,
+            y * BLOCKSIZE+BLOCKSIZE/2 + BORDERSIZE,
+            BLOCKSIZE - 2 * BORDERSIZE,
+            BLOCKSIZE - 2 * BORDERSIZE);
+        context.stroke();
+    } else {
     context.fillRect(
         x * BLOCKSIZE + BORDERSIZE,
         y * BLOCKSIZE + BORDERSIZE,
         BLOCKSIZE - 2 * BORDERSIZE,
         BLOCKSIZE - 2 * BORDERSIZE);
     context.stroke();
-
+    }
 }
 
 
 function drawBlock(x, y) {
     for (i = 0; i < 3; i++) {
-        drawBox(ctx,x, y + i, blockColors[i]);
+        drawBox(ctx,x, y + i, blockColors[i],ticktock);
     }
 
 
